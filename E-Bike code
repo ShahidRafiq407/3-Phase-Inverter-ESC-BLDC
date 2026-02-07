@@ -1,0 +1,98 @@
+//Large Ebike Motor code
+
+// -------- Pin mapping (Same as before) ----------
+#define AH 2
+#define AL 3
+#define BH 4
+#define BL 5
+#define CH 6
+#define CL 7
+
+// --- SCOOTER HUB MOTOR SETTINGS ---
+// Ye motor bhaari hai, isay start honay k liye bohot SLOW delay chahiye.
+// 30000 micros = 30ms (Tuk... Tuk... Tuk...)
+long currentDelay = 30000;   
+long minDelay = 1500;        // Max Speed (Hub motor k liye 1500 kaafi tez hai)
+double acceleration = 0;      
+
+void allOff()
+{
+  digitalWrite(AH, LOW); digitalWrite(AL, LOW);
+  digitalWrite(BH, LOW); digitalWrite(BL, LOW);
+  digitalWrite(CH, LOW); digitalWrite(CL, LOW);
+}
+
+void setup()
+{
+  // Pin Setup
+  pinMode(AH, OUTPUT); pinMode(AL, OUTPUT);
+  pinMode(BH, OUTPUT); pinMode(BL, OUTPUT);
+  pinMode(CH, OUTPUT); pinMode(CL, OUTPUT);
+
+  allOff();
+  delay(1000); 
+
+  // --- ALIGNMENT (Important for Heavy Motor) ---
+  // Motor ko lock karo taake pehla dhakka zaya na ho
+  digitalWrite(AH, HIGH); digitalWrite(BL, HIGH);
+  delay(2000); // 2 Second ka lock (Heavy load k liye time ziada diya)
+  
+  allOff();
+  delay(100);
+}
+
+// -------- 6-step commutation Loop --------
+void loop()
+{
+  // Step 1
+  digitalWrite(CH, LOW); digitalWrite(BL, LOW);
+  digitalWrite(AH, HIGH); digitalWrite(BL, HIGH);
+  delayMicroseconds(currentDelay);
+
+  // Step 2
+  digitalWrite(BL, LOW);
+  digitalWrite(AH, HIGH); digitalWrite(CL, HIGH);
+  delayMicroseconds(currentDelay);
+
+  // Step 3
+  digitalWrite(AH, LOW);
+  digitalWrite(BH, HIGH); digitalWrite(CL, HIGH);
+  delayMicroseconds(currentDelay);
+
+  // Step 4
+  digitalWrite(CL, LOW);
+  digitalWrite(BH, HIGH); digitalWrite(AL, HIGH);
+  delayMicroseconds(currentDelay);
+
+  // Step 5
+  digitalWrite(BH, LOW);
+  digitalWrite(CH, HIGH); digitalWrite(AL, HIGH);
+  delayMicroseconds(currentDelay);
+
+  // Step 6
+  digitalWrite(AL, LOW);
+  digitalWrite(CH, HIGH); digitalWrite(BL, HIGH);
+  delayMicroseconds(currentDelay);
+
+  // --- HEAVY MOTOR ACCELERATION LOGIC ---
+  if (currentDelay > minDelay) {
+    
+    // Ye motor HDD ki tarah jump nahi lay sakti.
+    // Isay "Dheeray Dheeray" tez karna hoga.
+    
+    if (currentDelay > 20000) {
+       acceleration = 20.0;  // Start may thora tez
+    } 
+    else if (currentDelay > 10000) {
+       acceleration = 10.0;  
+    } 
+    else if (currentDelay > 5000) {
+       acceleration = 5.0;   
+    } 
+    else {
+       acceleration = 1.0;   // High speed par slip na ho
+    }
+
+    currentDelay = currentDelay - acceleration;
+  }
+}
