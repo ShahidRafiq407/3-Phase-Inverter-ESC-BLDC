@@ -1,0 +1,100 @@
+//Small Bldc motor
+// -------- Pin mapping ----------
+#define AH 2
+#define AL 3
+#define BH 4
+#define BL 5
+#define CH 6
+#define CL 7
+
+// --- HDD MOTOR SPEED SETTINGS ---
+// Start Speed ko 10000 kar diya (Slow start = Ziada Torque)
+double currentDelay = 10000;   
+long minDelay = 200;           // Target Speed
+double acceleration = 0;       // Variable
+
+void allOff()
+{
+  digitalWrite(AH, LOW); digitalWrite(AL, LOW);
+  digitalWrite(BH, LOW); digitalWrite(BL, LOW);
+  digitalWrite(CH, LOW); digitalWrite(CL, LOW);
+}
+
+void setup()
+{
+  pinMode(AH, OUTPUT); pinMode(AL, OUTPUT);
+  pinMode(BH, OUTPUT); pinMode(BL, OUTPUT);
+  pinMode(CH, OUTPUT); pinMode(CL, OUTPUT);
+
+  allOff();
+  delay(1000); 
+
+  // --- ALIGNMENT SEQUENCE (Ye hai JADOO) ---
+  // Motor start karnay se pehlay usay zabardasti Position 6 par lay ao.
+  // Taake jab Loop shuru ho (Step 1), to motor tayar ho.
+  
+  digitalWrite(AL, LOW); // Confirm OFF
+  digitalWrite(CH, HIGH); digitalWrite(BL, HIGH); // Step 6 Position
+  delay(500); // 500ms ka waqfa taake rotor apni jaga par aa jaye
+  
+  allOff(); // Ab chor do
+  delay(50); // Thora sa saans lenay do
+}
+
+// -------- 6-step commutation Loop --------
+void loop()
+{
+  // Step 1
+  digitalWrite(CH, LOW); digitalWrite(BL, LOW);
+  digitalWrite(AH, HIGH); digitalWrite(BL, HIGH);
+  delayMicroseconds(currentDelay);
+
+  // Step 2
+  digitalWrite(BL, LOW);
+  digitalWrite(AH, HIGH); digitalWrite(CL, HIGH);
+  delayMicroseconds(currentDelay);
+
+  // Step 3
+  digitalWrite(AH, LOW);
+  digitalWrite(BH, HIGH); digitalWrite(CL, HIGH);
+  delayMicroseconds(currentDelay);
+
+  // Step 4
+  digitalWrite(CL, LOW);
+  digitalWrite(BH, HIGH); digitalWrite(AL, HIGH);
+  delayMicroseconds(currentDelay);
+
+  // Step 5
+  digitalWrite(BH, LOW);
+  digitalWrite(CH, HIGH); digitalWrite(AL, HIGH);
+  delayMicroseconds(currentDelay);
+
+  // Step 6
+  digitalWrite(AL, LOW);
+  digitalWrite(CH, HIGH); digitalWrite(BL, HIGH);
+  delayMicroseconds(currentDelay);
+
+  // --- STALL FIX LOGIC ---
+  if (currentDelay > minDelay) {
+    
+    // Logic: Start slow, then ramp up
+    
+    if (currentDelay > 5000) {
+       acceleration = 20.0;   // 10000 se 5000 tak jaldi aao
+    } 
+    else if (currentDelay > 3000) {
+       acceleration = 5.0;    // Phir aaram se
+    } 
+    else if (currentDelay > 1500) {
+       acceleration = 1.5;    // Mid range safe
+    } 
+    else if (currentDelay > 800) {
+       acceleration = 0.2;    // High speed safety
+    } 
+    else {
+       acceleration = 0.1;    // Super fast stability
+    }
+
+    currentDelay = currentDelay - acceleration;
+  }
+}
